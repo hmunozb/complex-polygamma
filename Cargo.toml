@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 simba = "0.1.5"
 num-traits = "0.2"
+
+[dev-dependencies]
+num-complex = "0.2"

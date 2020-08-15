@@ -86,29 +86,45 @@ where T::RealField : RealField + FromPrimitive + NumCast
 #[cfg(test)]
 mod tests {
     use core::f64::consts::PI;
+    use num_complex::Complex64 as c64;
     use super::trigamma;
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
 
     #[test]
     fn psi_onehalf(){
         let psi = trigamma(0.5).unwrap();
         let y = PI * PI / 2.0;
         println!("psi(1/2) = {}\npi^2/2 = {}", psi, y);
+
+        assert!((y-psi).abs() < 1.0e-8  )
     }
     #[test]
     fn psi_six(){
         let psi = trigamma(6.0).unwrap();
-        let y = 0.18132295573711532536;
-        println!("computer psi(6) = {}\nexpected psi(6) = {}", psi, y);
+        let y = 0.18132295573711532536f64;
+        println!("computed psi(6) = {}\nexpected psi(6) = {}", psi, y);
+
+        assert!((y-psi).abs() < 1.0e-8  )
     }
 
     #[test]
     fn psi_three(){
         let psi = trigamma(3.0).unwrap();
-        let y = 0.39493406684822643647;
-        println!("computer psi(3) = {}\nexpected psi(3) = {}", psi, y);
+        let y = 0.39493406684822643647f64;
+        println!("computed psi(3) = {}\nexpected psi(3) = {}", psi, y);
+
+        assert!((y-psi).abs() < 1.0e-8  )
+    }
+
+    #[test]
+    fn psi_1i(){
+        let z = c64::new(1.0, 1.0);
+        let psi = trigamma(z).unwrap();
+        let y = c64::new(
+            0.46300009662276378630,
+             -0.79423354275931886558
+        );
+        println!("computed psi(1+I) = {}\nexpected psi(1+I) = {}", psi, y);
+        
+        assert!((psi - y).norm() < 1.0e-8  )
     }
 }
