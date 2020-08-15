@@ -1,6 +1,5 @@
 use simba::scalar::{ComplexField, RealField};
-//use num_traits::cast::ToPrimitive;
-use num_traits::{Num, NumCast,FromPrimitive, ToPrimitive};
+use num_traits::{Zero, Num, NumCast,FromPrimitive, ToPrimitive};
 #[derive(Copy, Clone, Debug)]
 pub enum PolygammaError{
     NegInt,
@@ -57,13 +56,19 @@ where T::RealField : RealField + FromPrimitive + NumCast
     let y : T::RealField = FromPrimitive::from_i32(yn).unwrap();
 
     let re_z = z.real();
+    
     // Check that re_z is not an negative integer and reflect if negative
     if re_z.is_sign_negative() {
-        let x : T = pi * ( (pi * z).sin().recip());
-        if !x.is_finite(){
-            return Err(PolygammaError::NegInt);
+        if z.imaginary().is_zero(){
+            let x = z.real();
+            let xn = x.to_i64().unwrap();
+            let dx = x.to_f64().unwrap() - f64::from_i64(xn).unwrap();
+            if dx.abs() < f64::EPSILON{
+                return Err(PolygammaError::NegInt);
+            }
         }
 
+        let x : T = pi * ( (pi * z).sin().recip());
         return trigamma( T::one() - z).map(|psi2| x*x - psi2);
     }
     // For small re_z, use the recurrence relation to evaluate for larger re_z
@@ -89,13 +94,14 @@ mod tests {
     use num_complex::Complex64 as c64;
     use super::trigamma;
 
+    static TOL: f64 = 1.0e-8;
     #[test]
     fn psi_onehalf(){
         let psi = trigamma(0.5).unwrap();
         let y = PI * PI / 2.0;
         println!("psi(1/2) = {}\npi^2/2 = {}", psi, y);
 
-        assert!((y-psi).abs() < 1.0e-8  )
+        assert!((y-psi).abs() < TOL  )
     }
     #[test]
     fn psi_six(){
@@ -103,7 +109,7 @@ mod tests {
         let y = 0.18132295573711532536f64;
         println!("computed psi(6) = {}\nexpected psi(6) = {}", psi, y);
 
-        assert!((y-psi).abs() < 1.0e-8  )
+        assert!((y-psi).abs() < TOL  )
     }
 
     #[test]
@@ -112,7 +118,7 @@ mod tests {
         let y = 0.39493406684822643647f64;
         println!("computed psi(3) = {}\nexpected psi(3) = {}", psi, y);
 
-        assert!((y-psi).abs() < 1.0e-8  )
+        assert!((y-psi).abs() < TOL  )
     }
 
     #[test]
@@ -125,6 +131,37 @@ mod tests {
         );
         println!("computed psi(1+I) = {}\nexpected psi(1+I) = {}", psi, y);
         
-        assert!((psi - y).norm() < 1.0e-8  )
+        assert!((psi - y).norm() < TOL  )
+    }
+
+    #[test]
+    fn psi_neg(){
+        let psi = trigamma(-0.5).unwrap();
+        let y = 8.9348022005446793094f64;
+        println!("computed psi(-1/2) = {}\nexpected psi(-1/2) = {}", psi, y);
+
+        assert!((y-psi).abs() < TOL  );
+
+        let psi = trigamma(-1.5).unwrap();
+        let y = 9.3792466449891237539f64;
+        println!("computed psi(-3/2) = {}\nexpected psi(-3/2) = {}", psi, y);
+
+        assert!((y-psi).abs() < TOL  );
+
+        let psi = trigamma(-100.0);
+        psi.expect_err("trigamma should be infty");
+    }
+
+    #[test]
+    fn psi_neg_c64(){
+        let z = c64::new(-2.0, 1.0);
+        let psi = trigamma(z).unwrap();
+        let y = c64::new(
+            -0.41699990337723621370, 
+            -0.13423354275931886558 
+        );
+        println!("computed psi(-2+I) = {}\nexpected psi(-2+I) = {}", psi, y);
+        
+        assert!((psi - y).norm() < TOL  )
     }
 }
