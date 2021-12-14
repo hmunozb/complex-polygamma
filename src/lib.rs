@@ -16,12 +16,12 @@ static TRIGAMMA_ASYMPT_ODD : [f64; 5] = [
 ];
 
 /// Evaluate \sum_{k=0}^n 1 / (z + k)^2
-fn jump_sum<T: ComplexField>(z: T, n: i32) -> T{
+fn jump_sum<T: Copy+ComplexField>(z: T, n: i32) -> T{
     let mut s = T::zero();
 
     for k in 0..n+1{
-        let x: T = (z + T::from_i32(k).unwrap()).recip();
-        s += x*x;
+        let x: T = (z.clone() + T::from_subset(&(k as  f64))).recip();
+        s += x * x;
     }
 
     s
@@ -48,7 +48,7 @@ fn asym_sum<T: Copy + Num + FromPrimitive>(y: T) -> T{
             )
 }
 
-pub fn trigamma<T: ComplexField>( z: T) -> Result<T, PolygammaError>
+pub fn trigamma<T: Copy+ComplexField+FromPrimitive>( z: T) -> Result<T, PolygammaError>
 where T::RealField : RealField + FromPrimitive + NumCast
 {
     let pi = T::from_real(T::RealField::pi());
@@ -76,7 +76,7 @@ where T::RealField : RealField + FromPrimitive + NumCast
         let dy : T::RealField = y - re_z;
         let yn: i32 = dy.ceil().to_i32().unwrap();
 
-        return trigamma( z + T::from_i32(yn).unwrap() + T::one())
+        return trigamma( z + T::from_subset(&(yn as f64)) + T::one())
             .map(|psi2| psi2 + jump_sum(z, yn))
     }
 
